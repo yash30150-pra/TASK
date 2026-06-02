@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Futuristic Student Dashboard – track your learning streaks, courses, and activity in one immersive dark-mode interface." />
+  <title>Nexus · Student Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── Design Tokens ─────────────────────────────────────────── */
+    :root {
+      --bg-base:      #080b12;
+      --bg-surface:   #0d1120;
+      --bg-card:      #111827;
+      --bg-card-hover:#141f35;
+      --border:       rgba(255,255,255,0.06);
+      --border-glow:  rgba(99,102,241,0.35);
+
+      --accent-violet: #6366f1;
+      --accent-cyan:   #22d3ee;
+      --accent-pink:   #ec4899;
+      --accent-amber:  #f59e0b;
+      --accent-green:  #10b981;
+
+      --glow-violet: 0 0 40px rgba(99,102,241,0.25);
+      --glow-cyan:   0 0 40px rgba(34,211,238,0.2);
+
+      --text-primary:   #f0f4ff;
+      --text-secondary: #8b98b1;
+      --text-muted:     #4a5568;
+
+      --sidebar-w:      240px;
+      --sidebar-w-col:  68px;
+      --transition:     0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      --radius-lg:      18px;
+      --radius-md:      12px;
+      --radius-sm:      8px;
+    }
+
+    /* ─── Reset ──────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── Ambient Background ─────────────────────────────────────── */
+    .ambient {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      overflow: hidden;
+    }
+    .ambient::before {
+      content: '';
+      position: absolute;
+      width: 700px; height: 700px;
+      top: -200px; left: -100px;
+      background: radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%);
+      animation: drift1 18s ease-in-out infinite alternate;
+      will-change: transform;
+    }
+    .ambient::after {
+      content: '';
+      position: absolute;
+      width: 600px; height: 600px;
+      bottom: -150px; right: 0;
+      background: radial-gradient(circle, rgba(34,211,238,0.09) 0%, transparent 70%);
+      animation: drift2 22s ease-in-out infinite alternate;
+      will-change: transform;
+    }
+    .ambient-pink {
+      position: absolute;
+      width: 400px; height: 400px;
+      top: 45%; left: 55%;
+      background: radial-gradient(circle, rgba(236,72,153,0.07) 0%, transparent 70%);
+      animation: drift3 15s ease-in-out infinite alternate;
+      will-change: transform;
+    }
+    @keyframes drift1 { from { transform: translate(0,0) scale(1); } to { transform: translate(80px, 60px) scale(1.15); } }
+    @keyframes drift2 { from { transform: translate(0,0) scale(1); } to { transform: translate(-60px, -80px) scale(1.1); } }
+    @keyframes drift3 { from { transform: translate(0,0); } to { transform: translate(40px, -40px); } }
+
+    /* Stars */
+    .stars {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        radial-gradient(1px 1px at 15% 20%, rgba(255,255,255,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 42% 8%,  rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 70% 30%, rgba(255,255,255,0.35) 0%, transparent 100%),
+        radial-gradient(1px 1px at 88% 14%, rgba(255,255,255,0.45) 0%, transparent 100%),
+        radial-gradient(1px 1px at 5%  75%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 30% 60%, rgba(99,102,241,0.6) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 60% 80%, rgba(34,211,238,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 80% 55%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 95% 88%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 25% 90%, rgba(255,255,255,0.35) 0%, transparent 100%);
+    }
+
+    /* ─── Layout ─────────────────────────────────────────────────── */
+    .shell {
+      position: relative; z-index: 1;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ─── Sidebar ────────────────────────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-w);
+      min-height: 100vh;
+      background: rgba(13,17,32,0.85);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 24px 0;
+      position: fixed; left: 0; top: 0; bottom: 0;
+      z-index: 100;
+      transition: width var(--transition);
+      overflow: hidden;
+      will-change: width;
+    }
+    .sidebar.collapsed { width: var(--sidebar-w-col); }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 20px 28px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .logo-icon {
+      width: 36px; height: 36px; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--accent-violet), var(--accent-cyan));
+      border-radius: 10px;
+      display: grid; place-items: center;
+      font-size: 18px;
+      box-shadow: 0 0 20px rgba(99,102,241,0.4);
+    }
+    .logo-text {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      background: linear-gradient(90deg, var(--accent-violet), var(--accent-cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      opacity: 1;
+      transition: opacity var(--transition);
+    }
+    .sidebar.collapsed .logo-text { opacity: 0; }
+
+    .nav-section { flex: 1; padding: 0 12px; overflow: hidden; }
+    .nav-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      padding: 0 8px;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      white-space: nowrap;
+      opacity: 1;
+      transition: opacity var(--transition);
+    }
+    .sidebar.collapsed .nav-label { opacity: 0; }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: background var(--transition), color var(--transition), box-shadow var(--transition);
+      white-space: nowrap;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 2px;
+    }
+    .nav-item::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(90deg, rgba(99,102,241,0.12), transparent);
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+    .nav-item:hover::before, .nav-item.active::before { opacity: 1; }
+    .nav-item:hover, .nav-item.active {
+      color: var(--text-primary);
+      box-shadow: inset 2px 0 0 var(--accent-violet);
+    }
+    .nav-item.active { color: var(--accent-violet); }
+    .nav-icon {
+      font-size: 18px; flex-shrink: 0;
+      width: 24px; text-align: center;
+    }
+    .nav-text {
+      font-size: 14px; font-weight: 500;
+      opacity: 1;
+      transition: opacity var(--transition);
+    }
+    .sidebar.collapsed .nav-text { opacity: 0; }
+    .nav-badge {
+      margin-left: auto;
+      background: var(--accent-violet);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 20px;
+      opacity: 1;
+      transition: opacity var(--transition);
+    }
+    .sidebar.collapsed .nav-badge { opacity: 0; }
+
+    .sidebar-footer {
+      padding: 16px 12px 0;
+      border-top: 1px solid var(--border);
+      margin-top: auto;
+    }
+    .user-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 8px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background var(--transition);
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .user-card:hover { background: rgba(255,255,255,0.04); }
+    .avatar {
+      width: 36px; height: 36px; flex-shrink: 0;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-violet), var(--accent-pink));
+      display: grid; place-items: center;
+      font-size: 14px; font-weight: 700;
+      color: #fff;
+      border: 2px solid rgba(99,102,241,0.5);
+      box-shadow: 0 0 12px rgba(99,102,241,0.3);
+    }
+    .user-info { opacity: 1; transition: opacity var(--transition); }
+    .sidebar.collapsed .user-info { opacity: 0; }
+    .user-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .user-role { font-size: 11px; color: var(--text-muted); }
+
+    /* Toggle button */
+    .toggle-btn {
+      position: fixed;
+      top: 22px;
+      left: calc(var(--sidebar-w) - 14px);
+      z-index: 200;
+      width: 28px; height: 28px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-glow);
+      border-radius: 50%;
+      display: grid; place-items: center;
+      cursor: pointer;
+      transition: left var(--transition), box-shadow var(--transition);
+      box-shadow: 0 0 12px rgba(99,102,241,0.2);
+      color: var(--accent-violet);
+      font-size: 13px;
+    }
+    .toggle-btn:hover { box-shadow: 0 0 20px rgba(99,102,241,0.4); }
+    .shell.collapsed .toggle-btn { left: calc(var(--sidebar-w-col) - 14px); }
+
+    /* ─── Main Content ────────────────────────────────────────────── */
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      padding: 28px 28px 40px;
+      transition: margin-left var(--transition);
+      min-width: 0;
+    }
+    .shell.collapsed .main { margin-left: var(--sidebar-w-col); }
+
+    /* ─── Topbar ─────────────────────────────────────────────────── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+    .topbar-left { display: flex; flex-direction: column; gap: 2px; }
+    .topbar-date {
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .topbar-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .search-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 8px 16px;
+      width: 220px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .search-bar:focus-within {
+      border-color: var(--border-glow);
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+    }
+    .search-bar input {
+      background: none; border: none; outline: none;
+      color: var(--text-primary); font-size: 13px; width: 100%;
+    }
+    .search-bar input::placeholder { color: var(--text-muted); }
+    .icon-btn {
+      width: 38px; height: 38px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      display: grid; place-items: center;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+      color: var(--text-secondary);
+      font-size: 16px;
+      position: relative;
+    }
+    .icon-btn:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-glow);
+      box-shadow: var(--glow-violet);
+      color: var(--text-primary);
+    }
+    .notif-dot {
+      position: absolute; top: 6px; right: 6px;
+      width: 7px; height: 7px;
+      background: var(--accent-pink);
+      border-radius: 50%;
+      border: 1.5px solid var(--bg-base);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%,100% { box-shadow: 0 0 0 0 rgba(236,72,153,0.4); }
+      50%      { box-shadow: 0 0 0 4px rgba(236,72,153,0); }
+    }
+
+    /* ─── Bento Grid ─────────────────────────────────────────────── */
+    .bento {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      grid-auto-rows: minmax(90px, auto);
+      gap: 16px;
+    }
+
+    /* Card Base */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1),
+                  border-color 0.3s ease,
+                  box-shadow 0.3s ease;
+      will-change: transform, box-shadow;
+      contain: layout style;
+    }
+    .card::before {
+      content: '';
+      position: absolute; inset: 0;
+      border-radius: inherit;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    .card:hover { transform: translateY(-3px); border-color: var(--border-glow); }
+    .card:hover::before { opacity: 1; }
+
+    /* Grid placement */
+    .tile-hero    { grid-column: span 8; grid-row: span 2; }
+    .tile-streak  { grid-column: span 4; grid-row: span 2; }
+    .tile-course  { grid-column: span 4; grid-row: span 2; }
+    .tile-activity{ grid-column: span 8; grid-row: span 3; }
+    .tile-stats   { grid-column: span 4; grid-row: span 1; }
+    .tile-schedule{ grid-column: span 4; grid-row: span 2; }
+    .tile-quote   { grid-column: span 4; grid-row: span 1; }
+
+    /* ─── Hero Tile ──────────────────────────────────────────────── */
+    .tile-hero::before {
+      background: radial-gradient(ellipse at top left, rgba(99,102,241,0.18), transparent 60%);
+    }
+    .hero-glow {
+      position: absolute;
+      width: 400px; height: 400px;
+      top: -100px; right: -80px;
+      background: radial-gradient(circle, rgba(34,211,238,0.1) 0%, transparent 65%);
+      pointer-events: none;
+      animation: hero-pulse 6s ease-in-out infinite;
+      will-change: transform, opacity;
+    }
+    @keyframes hero-pulse {
+      0%,100% { transform: scale(1) translate(0,0); opacity: 0.6; }
+      50%      { transform: scale(1.15) translate(-10px, 10px); opacity: 1; }
+    }
+    .hero-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(99,102,241,0.15);
+      border: 1px solid rgba(99,102,241,0.3);
+      border-radius: 50px;
+      padding: 5px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent-violet);
+      margin-bottom: 16px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .hero-chip-dot {
+      width: 6px; height: 6px;
+      background: var(--accent-violet);
+      border-radius: 50%;
+      animation: blink 1.5s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    .hero-greeting {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(26px, 3vw, 36px);
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 10px;
+    }
+    .hero-name {
+      background: linear-gradient(90deg, var(--accent-violet), var(--accent-cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-sub {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      max-width: 480px;
+      margin-bottom: 28px;
+    }
+
+    /* Progress ring */
+    .hero-bottom {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      flex-wrap: wrap;
+    }
+    .hero-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .hero-stat-value {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--text-primary), rgba(255,255,255,0.7));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .hero-divider { width: 1px; height: 40px; background: var(--border); }
+
+    .progress-bar-wrap {
+      flex: 1;
+      min-width: 200px;
+    }
+    .progress-bar-label {
+      display: flex; justify-content: space-between;
+      font-size: 12px; color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+    .progress-bar-track {
+      height: 8px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 50px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 50px;
+      background: linear-gradient(90deg, var(--accent-violet), var(--accent-cyan));
+      box-shadow: 0 0 12px rgba(99,102,241,0.5);
+      transition: width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      will-change: width;
+    }
+
+    /* Floating orbs in hero */
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.6;
+      pointer-events: none;
+      will-change: transform;
+    }
+    .orb-1 {
+      width: 180px; height: 180px;
+      bottom: -60px; right: 40px;
+      background: radial-gradient(circle, rgba(99,102,241,0.25) 0%, transparent 70%);
+      animation: float1 8s ease-in-out infinite;
+    }
+    .orb-2 {
+      width: 120px; height: 120px;
+      bottom: 20px; right: 160px;
+      background: radial-gradient(circle, rgba(34,211,238,0.2) 0%, transparent 70%);
+      animation: float2 10s ease-in-out infinite;
+    }
+    @keyframes float1 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-10px,-15px) scale(1.05)} }
+    @keyframes float2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(10px,10px)} }
+
+    /* ─── Streak Tile ────────────────────────────────────────────── */
+    .tile-streak {
+      background: linear-gradient(135deg, #0f1628 0%, #111827 100%);
+    }
+    .tile-streak::before {
+      background: radial-gradient(ellipse at bottom right, rgba(245,158,11,0.15), transparent 60%);
+    }
+    .streak-icon {
+      font-size: 42px;
+      margin-bottom: 8px;
+      display: block;
+      filter: drop-shadow(0 0 16px rgba(245,158,11,0.6));
+      animation: flame 2s ease-in-out infinite;
+    }
+    @keyframes flame {
+      0%,100% { transform: scale(1) rotate(-3deg); }
+      50%      { transform: scale(1.07) rotate(3deg); }
+    }
+    .streak-number {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 52px;
+      font-weight: 800;
+      background: linear-gradient(180deg, var(--accent-amber), #d97706);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .streak-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; }
+    .streak-days {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .day-dot {
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      display: grid; place-items: center;
+      font-size: 9px;
+      color: var(--text-muted);
+      transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+    }
+    .day-dot.active {
+      background: rgba(245,158,11,0.2);
+      border-color: var(--accent-amber);
+      color: var(--accent-amber);
+      box-shadow: 0 0 10px rgba(245,158,11,0.3);
+    }
+    .day-dot.today {
+      background: rgba(245,158,11,0.35);
+      border-color: var(--accent-amber);
+      box-shadow: 0 0 16px rgba(245,158,11,0.5);
+      color: var(--accent-amber);
+      font-weight: 700;
+    }
+
+    /* ─── Course Tiles ───────────────────────────────────────────── */
+    .course-card {
+      cursor: pointer;
+    }
+    .course-card::before {
+      background: radial-gradient(ellipse at top left, rgba(99,102,241,0.1), transparent 60%);
+    }
+    .course-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+    .course-icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      display: grid; place-items: center;
+      font-size: 20px;
+    }
+    .course-badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 50px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .badge-active {
+      background: rgba(16,185,129,0.15);
+      color: var(--accent-green);
+      border: 1px solid rgba(16,185,129,0.3);
+    }
+    .badge-new {
+      background: rgba(99,102,241,0.15);
+      color: var(--accent-violet);
+      border: 1px solid rgba(99,102,241,0.3);
+    }
+    .course-title { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+    .course-instructor { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
+    .course-progress { }
+    .course-progress-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .course-progress-label { font-size: 11px; color: var(--text-secondary); }
+    .course-progress-pct { font-size: 11px; font-weight: 600; }
+
+    /* Skeleton loader */
+    .skeleton {
+      background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.07) 50%, rgba(255,255,255,0.03) 75%);
+      background-size: 400% 100%;
+      animation: shimmer 1.6s ease-in-out infinite;
+      border-radius: 6px;
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    /* ─── Activity / Contribution Graph ─────────────────────────── */
+    .tile-activity::before {
+      background: radial-gradient(ellipse at bottom left, rgba(34,211,238,0.1), transparent 60%);
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .section-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .section-meta { font-size: 12px; color: var(--text-muted); }
+    .pill-tabs {
+      display: flex;
+      gap: 4px;
+      background: rgba(255,255,255,0.04);
+      padding: 4px;
+      border-radius: 50px;
+      border: 1px solid var(--border);
+    }
+    .pill-tab {
+      padding: 4px 12px;
+      border-radius: 50px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .pill-tab.active {
+      background: var(--accent-violet);
+      color: #fff;
+    }
+
+    /* Contribution grid */
+    .contrib-grid {
+      display: grid;
+      grid-template-columns: repeat(52, 1fr);
+      grid-template-rows: repeat(7, 1fr);
+      gap: 3px;
+      margin-bottom: 8px;
+    }
+    .contrib-cell {
+      aspect-ratio: 1;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.02);
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: default;
+    }
+    .contrib-cell:hover { transform: scale(1.4); z-index: 10; position: relative; }
+    .contrib-cell[data-level="1"] { background: rgba(99,102,241,0.2); }
+    .contrib-cell[data-level="2"] { background: rgba(99,102,241,0.4); }
+    .contrib-cell[data-level="3"] { background: rgba(99,102,241,0.65); box-shadow: 0 0 6px rgba(99,102,241,0.3); }
+    .contrib-cell[data-level="4"] { background: var(--accent-violet); box-shadow: 0 0 10px rgba(99,102,241,0.5); }
+    .contrib-legend {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+    .contrib-legend-cell {
+      width: 10px; height: 10px;
+      border-radius: 2px;
+    }
+
+    /* Bar chart */
+    .bar-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      height: 120px;
+      margin-bottom: 8px;
+    }
+    .bar-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      height: 100%;
+      justify-content: flex-end;
+    }
+    .bar {
+      width: 100%;
+      border-radius: 4px 4px 0 0;
+      background: linear-gradient(180deg, var(--accent-violet), rgba(99,102,241,0.3));
+      transition: height 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+      will-change: height;
+      position: relative;
+      overflow: hidden;
+    }
+    .bar::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 30%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.15), transparent);
+      border-radius: 4px 4px 0 0;
+    }
+    .bar.accent { background: linear-gradient(180deg, var(--accent-cyan), rgba(34,211,238,0.3)); }
+    .bar-label { font-size: 10px; color: var(--text-muted); }
+
+    /* ─── Stats Tiles ────────────────────────────────────────────── */
+    .stat-mini {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .stat-icon-wrap {
+      width: 42px; height: 42px;
+      border-radius: 12px;
+      display: grid; place-items: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .stat-content { flex: 1; }
+    .stat-value {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .stat-sublabel { font-size: 11px; color: var(--text-muted); }
+    .stat-change {
+      font-size: 11px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .stat-change.up { color: var(--accent-green); }
+    .stat-change.down { color: var(--accent-pink); }
+
+    /* ─── Schedule Tile ──────────────────────────────────────────── */
+    .schedule-list { display: flex; flex-direction: column; gap: 10px; }
+    .schedule-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .schedule-item:hover { background: rgba(255,255,255,0.05); border-color: var(--border-glow); }
+    .schedule-time {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+      width: 50px;
+      flex-shrink: 0;
+    }
+    .schedule-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .schedule-name { font-size: 13px; font-weight: 500; color: var(--text-primary); flex: 1; }
+    .schedule-dur { font-size: 11px; color: var(--text-muted); }
+    .schedule-live {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(236,72,153,0.15);
+      color: var(--accent-pink);
+      border: 1px solid rgba(236,72,153,0.3);
+      animation: live-pulse 2s ease-in-out infinite;
+    }
+    @keyframes live-pulse {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.5; }
+    }
+
+    /* ─── Quote Tile ─────────────────────────────────────────────── */
+    .tile-quote {
+      background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(34,211,238,0.06));
+      border-color: rgba(99,102,241,0.2);
+    }
+    .quote-mark { font-size: 40px; color: rgba(99,102,241,0.3); line-height: 0.8; margin-bottom: 8px; }
+    .quote-text { font-size: 13px; color: var(--text-secondary); line-height: 1.6; font-style: italic; }
+    .quote-author { font-size: 11px; color: var(--text-muted); margin-top: 10px; font-weight: 600; }
+
+    /* ─── Loaded Animation ───────────────────────────────────────── */
+    .card { animation: card-in 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+    @keyframes card-in {
+      from { opacity: 0; transform: translateY(20px) scale(0.98); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .card:nth-child(1)  { animation-delay: 0.05s; }
+    .card:nth-child(2)  { animation-delay: 0.12s; }
+    .card:nth-child(3)  { animation-delay: 0.18s; }
+    .card:nth-child(4)  { animation-delay: 0.24s; }
+    .card:nth-child(5)  { animation-delay: 0.30s; }
+    .card:nth-child(6)  { animation-delay: 0.36s; }
+    .card:nth-child(7)  { animation-delay: 0.42s; }
+    .card:nth-child(8)  { animation-delay: 0.48s; }
+    .card:nth-child(9)  { animation-delay: 0.54s; }
+    .card:nth-child(10) { animation-delay: 0.60s; }
+
+    /* ─── Tooltip ────────────────────────────────────────────────── */
+    [data-tip] { position: relative; }
+    [data-tip]:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1e2535;
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      font-size: 11px;
+      white-space: nowrap;
+      padding: 5px 10px;
+      border-radius: 6px;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    /* ─── Scrollbar ──────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.4); }
+
+    /* ─── Responsive ─────────────────────────────────────────────── */
+    @media (max-width: 1200px) {
+      .tile-hero    { grid-column: span 7; }
+      .tile-streak  { grid-column: span 5; }
+      .tile-activity { grid-column: span 7; }
+      .tile-schedule { grid-column: span 5; }
+    }
+    @media (max-width: 900px) {
+      .tile-hero    { grid-column: span 12; grid-row: span 2; }
+      .tile-streak  { grid-column: span 6; grid-row: span 2; }
+      .tile-course  { grid-column: span 6; }
+      .tile-activity{ grid-column: span 12; }
+      .tile-stats   { grid-column: span 6; }
+      .tile-schedule{ grid-column: span 12; }
+      .tile-quote   { grid-column: span 12; }
+    }
+    @media (max-width: 600px) {
+      .main { padding: 16px; }
+      .bento { gap: 12px; }
+      .tile-hero, .tile-streak, .tile-course, .tile-activity, .tile-stats, .tile-schedule, .tile-quote {
+        grid-column: span 12;
+      }
+      .contrib-grid { grid-template-columns: repeat(26, 1fr); }
+      /* hide last 26 weeks on mobile */
+    }
+  </style>
+</head>
+<body>
+
+<!-- Ambient -->
+<div class="ambient"><div class="ambient-pink"></div></div>
+<div class="stars"></div>
+
+<div class="shell" id="shell">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">⚡</div>
+      <span class="logo-text">Nexus</span>
+    </div>
+
+    <nav class="nav-section">
+      <div class="nav-label">Main</div>
+
+      <div class="nav-item active" id="nav-dashboard">
+        <span class="nav-icon">⊞</span>
+        <span class="nav-text">Dashboard</span>
+      </div>
+      <div class="nav-item" id="nav-courses">
+        <span class="nav-icon">📚</span>
+        <span class="nav-text">My Courses</span>
+        <span class="nav-badge">4</span>
+      </div>
+      <div class="nav-item" id="nav-explore">
+        <span class="nav-icon">🔭</span>
+        <span class="nav-text">Explore</span>
+      </div>
+      <div class="nav-item" id="nav-assignments">
+        <span class="nav-icon">📝</span>
+        <span class="nav-text">Assignments</span>
+        <span class="nav-badge">2</span>
+      </div>
+
+      <div class="nav-label" style="margin-top:20px;">Insights</div>
+
+      <div class="nav-item" id="nav-analytics">
+        <span class="nav-icon">📊</span>
+        <span class="nav-text">Analytics</span>
+      </div>
+      <div class="nav-item" id="nav-achievements">
+        <span class="nav-icon">🏆</span>
+        <span class="nav-text">Achievements</span>
+      </div>
+      <div class="nav-item" id="nav-community">
+        <span class="nav-icon">👥</span>
+        <span class="nav-text">Community</span>
+      </div>
+
+      <div class="nav-label" style="margin-top:20px;">System</div>
+
+      <div class="nav-item" id="nav-settings">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-text">Settings</span>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="avatar">AK</div>
+        <div class="user-info">
+          <div class="user-name">Alex Kim</div>
+          <div class="user-role">Pro Member</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Toggle button -->
+  <button class="toggle-btn" id="toggleBtn" aria-label="Toggle sidebar" title="Collapse sidebar">‹</button>
+
+  <!-- ── Main ── -->
+  <main class="main" id="main">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-date" id="topbarDate">Loading date...</div>
+        <div class="topbar-title">My Dashboard</div>
+      </div>
+      <div class="topbar-right">
+        <div class="search-bar">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted);flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="searchInput" placeholder="Search courses…" autocomplete="off"/>
+        </div>
+        <div class="icon-btn" data-tip="Notifications">
+          🔔
+          <div class="notif-dot"></div>
+        </div>
+        <div class="icon-btn" data-tip="Calendar">📅</div>
+        <div class="avatar" style="cursor:pointer;" data-tip="Profile">AK</div>
+      </div>
+    </div>
+
+    <!-- ── Bento Grid ── -->
+    <div class="bento" id="bento">
+
+      <!-- 1. Hero Tile -->
+      <div class="card tile-hero">
+        <div class="hero-glow"></div>
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="hero-chip">
+          <span class="hero-chip-dot"></span>
+          Active Session
+        </div>
+        <h1 class="hero-greeting">
+          Welcome back,&nbsp;<span class="hero-name">Alex</span> 👋
+        </h1>
+        <p class="hero-sub">
+          You're on a roll! You've completed <strong style="color:var(--accent-cyan)">3 lessons</strong> this week.
+          Keep the momentum going — your next milestone is just around the corner.
+        </p>
+        <div class="hero-bottom">
+          <div class="hero-stat">
+            <div class="hero-stat-value" id="heroHours">0</div>
+            <div class="hero-stat-label">Hours Learned</div>
+          </div>
+          <div class="hero-divider"></div>
+          <div class="hero-stat">
+            <div class="hero-stat-value" id="heroCourses">0</div>
+            <div class="hero-stat-label">Courses Active</div>
+          </div>
+          <div class="hero-divider"></div>
+          <div class="hero-stat">
+            <div class="hero-stat-value" id="heroCerts">0</div>
+            <div class="hero-stat-label">Certificates</div>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-label">
+              <span>Weekly Goal Progress</span>
+              <span id="goalPct">0%</span>
+            </div>
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill" id="goalBar" style="width:0%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Streak Tile -->
+      <div class="card tile-streak">
+        <span class="streak-icon">🔥</span>
+        <div class="streak-number" id="streakNum">0</div>
+        <div class="streak-label">Day Streak</div>
+        <div class="streak-days" id="streakDays"></div>
+      </div>
+
+      <!-- 3–6. Course Tiles (dynamic) -->
+      <div id="courseGrid" style="display:contents;"></div>
+
+      <!-- 7. Activity Tile -->
+      <div class="card tile-activity">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Learning Activity</div>
+            <div class="section-meta" id="activityMeta">364 contributions in the last year</div>
+          </div>
+          <div class="pill-tabs" id="activityTabs">
+            <div class="pill-tab active" data-view="grid">Heatmap</div>
+            <div class="pill-tab" data-view="bar">Weekly</div>
+          </div>
+        </div>
+        <div id="activityView"></div>
+        <div class="contrib-legend" id="contribLegend">
+          <span>Less</span>
+          <div class="contrib-legend-cell" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);"></div>
+          <div class="contrib-legend-cell" style="background:rgba(99,102,241,0.2);"></div>
+          <div class="contrib-legend-cell" style="background:rgba(99,102,241,0.4);"></div>
+          <div class="contrib-legend-cell" style="background:rgba(99,102,241,0.65);"></div>
+          <div class="contrib-legend-cell" style="background:var(--accent-violet);"></div>
+          <span>More</span>
+        </div>
+      </div>
+
+      <!-- 8. Stats — XP -->
+      <div class="card tile-stats">
+        <div class="stat-mini">
+          <div class="stat-icon-wrap" style="background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.2)">⚡</div>
+          <div class="stat-content">
+            <div class="stat-value">4,280</div>
+            <div class="stat-sublabel">Total XP Points</div>
+          </div>
+          <div class="stat-change up">↑ 12%</div>
+        </div>
+      </div>
+
+      <!-- 9. Stats — Rank -->
+      <div class="card tile-stats" style="grid-column: span 4;">
+        <div class="stat-mini">
+          <div class="stat-icon-wrap" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.2)">🏅</div>
+          <div class="stat-content">
+            <div class="stat-value">#38</div>
+            <div class="stat-sublabel">Global Rank</div>
+          </div>
+          <div class="stat-change up">↑ 5 spots</div>
+        </div>
+      </div>
+
+      <!-- 10. Schedule Tile -->
+      <div class="card tile-schedule">
+        <div class="section-header">
+          <div class="section-title">Today's Schedule</div>
+          <div class="section-meta">Mon, Jun 2</div>
+        </div>
+        <div class="schedule-list">
+          <div class="schedule-item">
+            <div class="schedule-time">10:00</div>
+            <div class="schedule-dot" style="background:#6366f1;box-shadow:0 0 6px rgba(99,102,241,0.5)"></div>
+            <div class="schedule-name">Intro to TypeScript</div>
+            <div class="schedule-live">LIVE</div>
+          </div>
+          <div class="schedule-item">
+            <div class="schedule-time">13:00</div>
+            <div class="schedule-dot" style="background:#22d3ee;box-shadow:0 0 6px rgba(34,211,238,0.5)"></div>
+            <div class="schedule-name">System Design Q&A</div>
+            <div class="schedule-dur">45 min</div>
+          </div>
+          <div class="schedule-item">
+            <div class="schedule-time">15:30</div>
+            <div class="schedule-dot" style="background:#10b981;box-shadow:0 0 6px rgba(16,185,129,0.5)"></div>
+            <div class="schedule-name">React Deep Dive</div>
+            <div class="schedule-dur">60 min</div>
+          </div>
+          <div class="schedule-item">
+            <div class="schedule-time">18:00</div>
+            <div class="schedule-dot" style="background:#ec4899;box-shadow:0 0 6px rgba(236,72,153,0.5)"></div>
+            <div class="schedule-name">ML Fundamentals</div>
+            <div class="schedule-dur">90 min</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 11. Quote Tile -->
+      <div class="card tile-quote">
+        <div class="quote-mark">"</div>
+        <div class="quote-text" id="quoteText">The expert in anything was once a beginner. Keep learning, keep growing.</div>
+        <div class="quote-author" id="quoteAuthor">— Helen Hayes</div>
+      </div>
+
+    </div><!-- /bento -->
+  </main>
+</div><!-- /shell -->
+
+<script>
+/* ─── Supabase mock (simulated async fetch) ───────────────────────── */
+const MOCK_SUPABASE = {
+  from: (table) => ({
+    select: () => new Promise((resolve) => {
+      setTimeout(() => {
+        const data = {
+          courses: [
+            {
+              id: 1, title: 'Advanced TypeScript', instructor: 'Sarah Chen',
+              icon: '⚙️', color: '#6366f1', progress: 72, total_lessons: 48,
+              completed_lessons: 34, badge: 'active', xp: 1200
+            },
+            {
+              id: 2, title: 'React & Next.js Mastery', instructor: 'James Park',
+              icon: '⚛️', color: '#22d3ee', progress: 45, total_lessons: 64,
+              completed_lessons: 29, badge: 'active', xp: 950
+            },
+            {
+              id: 3, title: 'System Design Pro', instructor: 'Priya Nair',
+              icon: '🏗️', color: '#10b981', progress: 88, total_lessons: 32,
+              completed_lessons: 28, badge: 'active', xp: 1500
+            },
+            {
+              id: 4, title: 'Machine Learning 101', instructor: 'Dr. Amir K.',
+              icon: '🧠', color: '#ec4899', progress: 18, total_lessons: 52,
+              completed_lessons: 9, badge: 'new', xp: 450
+            },
+          ]
+        };
+        resolve({ data: data[table] || [], error: null });
+      }, 1100);
+    })
+  })
+};
+
+/* ─── State ──────────────────────────────────────────────────────── */
+let activityMode = 'grid';
+const contributions = generateContributions();
+
+/* ─── Init ───────────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  setDate();
+  animateCounters();
+  buildStreak();
+  renderActivity('grid');
+  loadCourses();
+  initSidebar();
+  initTabs();
+  initNavItems();
+  setInterval(cycleQuote, 8000);
+});
+
+/* ─── Date ───────────────────────────────────────────────────────── */
+function setDate() {
+  const now = new Date();
+  const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  document.getElementById('topbarDate').textContent = now.toLocaleDateString('en-US', opts);
+}
+
+/* ─── Counter animation ──────────────────────────────────────────── */
+function animateCounters() {
+  animateNum('heroHours', 0, 142, 1400, v => v);
+  animateNum('heroCourses', 0, 4, 600, v => v);
+  animateNum('heroCerts', 0, 3, 800, v => v);
+  animateNum('streakNum', 0, 21, 1000, v => v);
+
+  setTimeout(() => {
+    document.getElementById('goalBar').style.width = '68%';
+    const pct = document.getElementById('goalPct');
+    let v = 0;
+    const iv = setInterval(() => {
+      v += 2;
+      pct.textContent = v + '%';
+      if (v >= 68) { pct.textContent = '68%'; clearInterval(iv); }
+    }, 20);
+  }, 400);
+}
+function animateNum(id, from, to, dur, fmt) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const start = performance.now();
+  function step(now) {
+    const t = Math.min((now - start) / dur, 1);
+    const ease = 1 - Math.pow(1 - t, 3);
+    el.textContent = fmt(Math.round(from + (to - from) * ease));
+    if (t < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+/* ─── Streak ─────────────────────────────────────────────────────── */
+function buildStreak() {
+  const container = document.getElementById('streakDays');
+  const days = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  const today = new Date().getDay();
+  days.forEach((d, i) => {
+    const el = document.createElement('div');
+    el.className = 'day-dot' + (i < today ? ' active' : '') + (i === today ? ' today' : '');
+    el.textContent = d;
+    container.appendChild(el);
+  });
+}
+
+/* ─── Contribution data ──────────────────────────────────────────── */
+function generateContributions() {
+  const cells = [];
+  for (let i = 0; i < 52 * 7; i++) {
+    const r = Math.random();
+    cells.push(r < 0.45 ? 0 : r < 0.65 ? 1 : r < 0.80 ? 2 : r < 0.92 ? 3 : 4);
+  }
+  return cells;
+}
+
+/* ─── Activity views ─────────────────────────────────────────────── */
+function renderActivity(mode) {
+  activityMode = mode;
+  const container = document.getElementById('activityView');
+  const legend = document.getElementById('contribLegend');
+  const meta = document.getElementById('activityMeta');
+
+  if (mode === 'grid') {
+    legend.style.display = 'flex';
+    const total = contributions.filter(c => c > 0).length;
+    meta.textContent = `${total} active days in the last year`;
+
+    const grid = document.createElement('div');
+    grid.className = 'contrib-grid';
+    contributions.forEach((level, i) => {
+      const cell = document.createElement('div');
+      cell.className = 'contrib-cell';
+      if (level > 0) cell.setAttribute('data-level', level);
+      const weekAgo = 364 - Math.floor(i / 7);
+      cell.setAttribute('data-tip', `${level * 2} lessons · ${weekAgo}d ago`);
+      grid.appendChild(cell);
+    });
+    container.innerHTML = '';
+    container.appendChild(grid);
+  } else {
+    legend.style.display = 'none';
+    meta.textContent = 'Lessons completed per day this week';
+
+    const labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const values = [8, 12, 5, 14, 10, 3, 6];
+    const max = Math.max(...values);
+
+    const chart = document.createElement('div');
+    chart.className = 'bar-chart';
+    labels.forEach((label, i) => {
+      const col = document.createElement('div');
+      col.className = 'bar-col';
+      const bar = document.createElement('div');
+      bar.className = 'bar' + (i === 3 ? ' accent' : '');
+      bar.style.height = '0px';
+      const lbl = document.createElement('div');
+      lbl.className = 'bar-label';
+      lbl.textContent = label;
+      col.appendChild(bar);
+      col.appendChild(lbl);
+      chart.appendChild(col);
+      // animate
+      setTimeout(() => {
+        bar.style.height = ((values[i] / max) * 100) + 'px';
+      }, 50 + i * 60);
+    });
+    container.innerHTML = '';
+    container.appendChild(chart);
+  }
+}
+
+function initTabs() {
+  document.querySelectorAll('#activityTabs .pill-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('#activityTabs .pill-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      renderActivity(tab.dataset.view);
+    });
+  });
+}
+
+/* ─── Courses (mock Supabase) ────────────────────────────────────── */
+function loadCourses() {
+  const container = document.getElementById('courseGrid');
+
+  // Show skeletons
+  for (let i = 0; i < 4; i++) {
+    const sk = document.createElement('div');
+    sk.className = 'card tile-course';
+    sk.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+        <div class="skeleton" style="width:44px;height:44px;border-radius:12px;"></div>
+        <div class="skeleton" style="width:55px;height:20px;border-radius:50px;"></div>
+      </div>
+      <div class="skeleton" style="width:70%;height:16px;margin-bottom:8px;"></div>
+      <div class="skeleton" style="width:50%;height:12px;margin-bottom:20px;"></div>
+      <div class="skeleton" style="width:100%;height:8px;border-radius:50px;"></div>
+    `;
+    container.appendChild(sk);
+  }
+
+  MOCK_SUPABASE.from('courses').select().then(({ data }) => {
+    container.innerHTML = '';
+    data.forEach((course, i) => {
+      const card = buildCourseCard(course, i);
+      container.appendChild(card);
+    });
+  });
+}
+
+function buildCourseCard(course, idx) {
+  const card = document.createElement('div');
+  card.className = 'card tile-course course-card';
+  card.style.animationDelay = (0.05 + idx * 0.08) + 's';
+
+  const iconBg = hexToRgba(course.color, 0.15);
+  const iconBorder = hexToRgba(course.color, 0.3);
+
+  card.innerHTML = `
+    <div class="course-header">
+      <div class="course-icon" style="background:${iconBg};border:1px solid ${iconBorder};">${course.icon}</div>
+      <span class="course-badge ${course.badge === 'active' ? 'badge-active' : 'badge-new'}">
+        ${course.badge === 'active' ? '● Active' : '✦ New'}
+      </span>
+    </div>
+    <div class="course-title">${course.title}</div>
+    <div class="course-instructor">by ${course.instructor}</div>
+    <div class="course-progress">
+      <div class="course-progress-row">
+        <span class="course-progress-label">${course.completed_lessons} / ${course.total_lessons} lessons</span>
+        <span class="course-progress-pct" style="color:${course.color}">${course.progress}%</span>
+      </div>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="cp-${course.id}" style="width:0%;background:linear-gradient(90deg,${course.color},${hexToRgba(course.color,0.5)});box-shadow:0 0 12px ${hexToRgba(course.color,0.4)};"></div>
+      </div>
+    </div>
+    <div style="margin-top:14px;display:flex;align-items:center;gap:6px;">
+      <span style="font-size:11px;color:var(--text-muted)">⚡</span>
+      <span style="font-size:11px;color:var(--text-muted)">${course.xp.toLocaleString()} XP earned</span>
+    </div>
+  `;
+
+  // animate progress bar after mount
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      const bar = document.getElementById('cp-' + course.id);
+      if (bar) bar.style.width = course.progress + '%';
+    }, 200 + idx * 100);
+  });
+
+  // hover glow
+  card.addEventListener('mouseenter', () => {
+    card.style.boxShadow = `0 8px 40px ${hexToRgba(course.color, 0.2)}`;
+    card.style.borderColor = hexToRgba(course.color, 0.35);
+  });
+  card.addEventListener('mouseleave', () => {
+    card.style.boxShadow = '';
+    card.style.borderColor = '';
+  });
+
+  return card;
+}
+
+/* ─── Sidebar toggle ─────────────────────────────────────────────── */
+function initSidebar() {
+  const btn = document.getElementById('toggleBtn');
+  const shell = document.getElementById('shell');
+  const sidebar = document.getElementById('sidebar');
+
+  btn.addEventListener('click', () => {
+    const collapsed = shell.classList.toggle('collapsed');
+    sidebar.classList.toggle('collapsed', collapsed);
+    btn.textContent = collapsed ? '›' : '‹';
+    btn.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+  });
+}
+
+/* ─── Nav items ──────────────────────────────────────────────────── */
+function initNavItems() {
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      item.classList.add('active');
+    });
+  });
+}
+
+/* ─── Quote rotator ──────────────────────────────────────────────── */
+const quotes = [
+  { text: 'The expert in anything was once a beginner. Keep learning, keep growing.', author: '— Helen Hayes' },
+  { text: 'An investment in knowledge pays the best interest.', author: '— Benjamin Franklin' },
+  { text: 'Live as if you were to die tomorrow. Learn as if you were to live forever.', author: '— Mahatma Gandhi' },
+  { text: 'The more that you read, the more things you will know.', author: '— Dr. Seuss' },
+  { text: 'Education is the most powerful weapon you can use to change the world.', author: '— Nelson Mandela' },
+];
+let quoteIdx = 0;
+function cycleQuote() {
+  quoteIdx = (quoteIdx + 1) % quotes.length;
+  const el = document.getElementById('quoteText');
+  const au = document.getElementById('quoteAuthor');
+  el.style.opacity = 0; au.style.opacity = 0;
+  setTimeout(() => {
+    el.textContent = quotes[quoteIdx].text;
+    au.textContent = quotes[quoteIdx].author;
+    el.style.transition = 'opacity 0.5s'; au.style.transition = 'opacity 0.5s';
+    el.style.opacity = 1; au.style.opacity = 1;
+  }, 400);
+}
+
+/* ─── Helpers ────────────────────────────────────────────────────── */
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+</script>
+</body>
+</html>
