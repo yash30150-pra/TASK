@@ -93,8 +93,8 @@ Only commit .env.example to document required variables.
 Clone the repo:
 
 bash
-git clone https://github.com/your-org/student-dashboard.git
-cd student-dashboard
+git clone https://github.com/yash30150-pra/TASK.git
+
 Install dependencies:
 
 bash
